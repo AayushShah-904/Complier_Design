@@ -1,0 +1,6 @@
+<HTML>
+<HEAD>
+INSERT
+DELETE
+</HEAD>
+</HTML>

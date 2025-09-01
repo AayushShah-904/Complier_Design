@@ -1,0 +1,4 @@
+int main() {
+    float avg = 10;
+    _myVar = avg + 1;
+}
