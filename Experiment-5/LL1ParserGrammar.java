@@ -1,19 +1,29 @@
 
 import java.util.*;
 
-public class LL1ParserWithHardcodedGrammar {
+public class LL1ParserGrammar {
 
+    // Input string, index pointer, parsing stack
     private String input;
     private int index;
     private Stack<String> stack;
+
+    // Parsing table: maps non-terminal and terminal to production
     private Map<String, Map<String, String[]>> parsingTable;
+
+    // Grammar rules: maps non-terminal to list of its productions
     private Map<String, List<String[]>> grammar;
+
+    // Set of terminals and non-terminals
     private Set<String> terminals;
     private Set<String> nonTerminals;
+
+    // FIRST and FOLLOW sets
     private Map<String, Set<String>> first;
     private Map<String, Set<String>> follow;
 
-    public LL1ParserWithHardcodedGrammar(String input) {
+    // Constructor initializes variables
+    public LL1ParserGrammar(String input) {
         this.input = input;
         this.index = 0;
         this.stack = new Stack<>();
@@ -23,13 +33,16 @@ public class LL1ParserWithHardcodedGrammar {
         this.parsingTable = new HashMap<>();
     }
 
+    // Initialize grammar rules, terminals, and non-terminals
     public void initGrammar() {
+        // Define non-terminals
         nonTerminals.add("E");
         nonTerminals.add("E'");
         nonTerminals.add("T");
         nonTerminals.add("T'");
         nonTerminals.add("F");
 
+        // Define terminals
         terminals.add("+");
         terminals.add("-");
         terminals.add("*");
@@ -39,6 +52,7 @@ public class LL1ParserWithHardcodedGrammar {
         terminals.add("i");
         terminals.add("$");
 
+        // Define grammar productions
         grammar.put("E", Arrays.asList(new String[][]{{"T", "E'"}}));
         grammar.put("E'", Arrays.asList(
                 new String[]{"+", "T", "E'"},
@@ -57,11 +71,13 @@ public class LL1ParserWithHardcodedGrammar {
         ));
     }
 
+    // Compute FIRST and FOLLOW sets
     public void computeFirstFollow() {
         this.first = computeFirstSets();
         this.follow = computeFollowSets();
     }
 
+    // Compute FIRST set of a given production
     private Set<String> computeFirstOfProduction(String[] prod) {
         Set<String> result = new HashSet<>();
         if (prod.length == 0 || (prod.length == 1 && prod[0].equals("ε"))) {
@@ -70,7 +86,7 @@ public class LL1ParserWithHardcodedGrammar {
         }
         for (String symbol : prod) {
             if (!nonTerminals.contains(symbol)) {
-                result.add(symbol);
+                result.add(symbol); // Terminal symbol added directly
                 break;
             } else {
                 Set<String> symbolFirst = first.get(symbol);
@@ -85,6 +101,7 @@ public class LL1ParserWithHardcodedGrammar {
         return result;
     }
 
+    // Iterative algorithm to compute FIRST sets for all non-terminals
     private Map<String, Set<String>> computeFirstSets() {
         Map<String, Set<String>> first = new HashMap<>();
         for (String nt : nonTerminals) {
@@ -136,12 +153,13 @@ public class LL1ParserWithHardcodedGrammar {
         return first;
     }
 
+    // Iterative algorithm to compute FOLLOW sets for all non-terminals
     private Map<String, Set<String>> computeFollowSets() {
         Map<String, Set<String>> follow = new HashMap<>();
         for (String nt : nonTerminals) {
             follow.put(nt, new HashSet<>());
         }
-        follow.get("E").add("$");
+        follow.get("E").add("$"); // Start symbol's FOLLOW set contains $
         boolean changed;
         do {
             changed = false;
@@ -179,6 +197,7 @@ public class LL1ParserWithHardcodedGrammar {
         return follow;
     }
 
+    // Build parsing table using FIRST and FOLLOW sets
     public void buildParsingTable() {
         parsingTable = new HashMap<>();
         for (String nt : nonTerminals) {
@@ -190,18 +209,19 @@ public class LL1ParserWithHardcodedGrammar {
                 Set<String> firstSet = computeFirstOfProduction(prod);
                 for (String terminal : firstSet) {
                     if (!terminal.equals("")) {
-                        row.put(terminal, prod);
+                        row.put(terminal, prod); // Insert rule in table
                     }
                 }
                 if (firstSet.contains("")) {
                     for (String terminal : follow.get(nt)) {
                         if (!row.containsKey(terminal)) {
-                            row.put(terminal, prod);
+                            row.put(terminal, prod); // Insert rule for nullable productions
                         }
                     }
                 }
             }
         }
+        // Add "sync" entries where no rule is defined but FOLLOW set includes terminal
         for (String nt : nonTerminals) {
             Map<String, String[]> row = parsingTable.get(nt);
             for (String terminal : terminals) {
@@ -212,6 +232,7 @@ public class LL1ParserWithHardcodedGrammar {
         }
     }
 
+    // Display FIRST and FOLLOW sets
     public void printFirstFollow() {
         System.out.println("=== FIRST Sets ===");
         for (String nt : first.keySet()) {
@@ -223,6 +244,7 @@ public class LL1ParserWithHardcodedGrammar {
         }
     }
 
+    // Display the parsing table neatly
     public void printParsingTable() {
         List<String> terminalList = new ArrayList<>(terminals);
         System.out.printf("%-8s", "NT/T");
@@ -258,17 +280,20 @@ public class LL1ParserWithHardcodedGrammar {
         }
     }
 
+    // Check if a symbol is terminal
     private boolean isTerminal(String symbol) {
         return !nonTerminals.contains(symbol);
     }
 
+    // Display parsing steps
     private void printParsingStep(int step, String currentToken, String action) {
         System.out.printf("%-5d %-25s %-15s %-20s\n", step, stack.toString(), currentToken, action);
     }
 
+    // LL(1) parsing algorithm with error recovery using sync entries
     public void parse() {
         stack.push("$");
-        stack.push("E"); // start symbol
+        stack.push("E"); // Start symbol
 
         int step = 1;
 
@@ -303,7 +328,7 @@ public class LL1ParserWithHardcodedGrammar {
                 if (production != null) {
                     if (production.length == 1 && production[0].equals("sync")) {
                         printParsingStep(step, currentToken, "Error: sync, skipping " + currentToken);
-                        index++;  // Skip input symbol
+                        index++;  // Skip input symbol on sync error
                     } else {
                         stack.pop();
                         for (int i = production.length - 1; i >= 0; i--) {
@@ -323,10 +348,11 @@ public class LL1ParserWithHardcodedGrammar {
         }
     }
 
+    // Main function to execute parsing for example inputs
     public static void main(String[] args) {
         String input = "i+i*i$"; // example input
 
-        LL1ParserWithHardcodedGrammar parser = new LL1ParserWithHardcodedGrammar(input);
+        LL1ParserGrammar parser = new LL1ParserGrammar(input);
         parser.initGrammar();
         parser.computeFirstFollow();
         parser.buildParsingTable();
@@ -337,11 +363,11 @@ public class LL1ParserWithHardcodedGrammar {
         System.out.println("\n=== Parsing ===");
         parser.parse();
 
-        System.out.println("\nNew String for Parsing.");
+        System.out.println("\n============================New String for Parsing.============================");
 
-        String input1 = ")i*+i$"; // example input
+        String input1 = ")i*+i$"; // example input with errors
 
-        LL1ParserWithHardcodedGrammar parser1 = new LL1ParserWithHardcodedGrammar(input1);
+        LL1ParserGrammar parser1 = new LL1ParserGrammar(input1);
         parser1.initGrammar();
         parser1.computeFirstFollow();
         parser1.buildParsingTable();
