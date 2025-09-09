@@ -191,6 +191,8 @@ public class OperatorPrecedenceParser {
     public static void main(String[] args) {
         String input = "i+i*i$"; // Example input
 
+        System.out.println("Input Expression: " + input);
+
         OperatorPrecedenceParser parser = new OperatorPrecedenceParser(input);
         System.out.println("=== Operator Precedence Table ===");
         parser.printPrecedenceTable();
